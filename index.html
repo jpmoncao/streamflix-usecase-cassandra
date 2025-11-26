@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="UTF-8">
+    <title>StreamFlix - Monitor Cassandra</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-gray-900 text-white p-10 font-sans">
+
+    <div class="max-w-4xl mx-auto">
+        <h1 class="text-4xl font-bold mb-8 text-blue-500">StreamFlix <span class="text-gray-400 text-xl">| Cassandra
+                Real-time Ingestion</span></h1>
+
+        <div class="bg-gray-800 p-6 rounded-lg mb-8 shadow-lg border border-gray-700">
+            <h2 class="text-xl mb-4 font-semibold">Simular Novo Acesso (Write Path)</h2>
+            <div class="flex gap-4">
+                <input id="filmeInput" type="text" placeholder="Nome do Filme (ex: Velozes e Furiosos)"
+                    class="flex-1 p-3 rounded bg-gray-700 border border-gray-600 focus:outline-none focus:border-blue-500">
+
+                <select id="deviceInput" class="p-3 rounded bg-gray-700 border border-gray-600">
+                    <option value="Mobile">Celular</option>
+                    <option value="TV 4K">TV Sala</option>
+                    <option value="Web">Computador</option>
+                </select>
+
+                <button onclick="enviarDados()"
+                    class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded transition">
+                    Dar Play
+                </button>
+            </div>
+        </div>
+
+        <div class="bg-gray-800 p-6 rounded-lg shadow-lg border border-gray-700">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-semibold">Últimas Visualizações (Read Path)</h2>
+                <span class="text-xs text-green-400 animate-pulse">● Live Sync (2s)</span>
+            </div>
+
+            <table class="w-full text-left">
+                <thead>
+                    <tr class="text-gray-400 border-b border-gray-700">
+                        <th class="pb-2">Data/Hora (Clustering Key)</th>
+                        <th class="pb-2">Filme</th>
+                        <th class="pb-2">Dispositivo</th>
+                    </tr>
+                </thead>
+                <tbody id="tabelaCorpo">
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:3000';
+
+        async function enviarDados() {
+            const filme = document.getElementById('filmeInput').value;
+            const dispositivo = document.getElementById('deviceInput').value;
+            if (!filme) return alert("Digite um filme!");
+
+            await fetch(`${API_URL}/assistir`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ filme, dispositivo })
+            });
+
+            document.getElementById('filmeInput').value = '';
+            carregarDados(); // Atualiza na hora
+        }
+
+        async function carregarDados() {
+            const response = await fetch(`${API_URL}/historico`);
+            const dados = await response.json();
+
+            const tbody = document.getElementById('tabelaCorpo');
+            tbody.innerHTML = '';
+
+            dados.forEach(dado => {
+                const dataFormatada = new Date(dado.data_hora).toLocaleString('pt-BR');
+                const row = `
+                    <tr class="border-b border-gray-700 hover:bg-gray-750 transition">
+                        <td class="py-3 text-blue-300 font-mono text-sm">${dataFormatada}</td>
+                        <td class="py-3 font-bold">${dado.filme_titulo}</td>
+                        <td class="py-3 text-gray-400">${dado.dispositivo}</td>
+                    </tr>
+                `;
+                tbody.innerHTML += row;
+            });
+        }
+
+        // Loop de atualização automática (Polling)
+        setInterval(carregarDados, 2000);
+        carregarDados();
+    </script>
+</body>
+
+</html>
