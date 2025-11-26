@@ -4,51 +4,71 @@
 <head>
     <meta charset="UTF-8">
     <title>StreamFlix - Monitor Cassandra</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
 </head>
 
 <body class="bg-gray-900 text-white p-10 font-sans">
 
     <div class="max-w-4xl mx-auto">
-        <h1 class="text-4xl font-bold mb-8 text-blue-500">StreamFlix <span class="text-gray-400 text-xl">| Cassandra
-                Real-time Ingestion</span></h1>
+        <div class="flex items-center mb-8">
+            <i class="fa-solid fa-database text-4xl text-blue-500 mr-4"></i>
+            <h1 class="text-4xl font-bold text-blue-500">StreamFlix <span class="text-gray-400 text-xl">| Cassandra
+                    Real-time Ingestion</span></h1>
+        </div>
 
+        <!-- Formulário de Ingestão -->
         <div class="bg-gray-800 p-6 rounded-lg mb-8 shadow-lg border border-gray-700">
-            <h2 class="text-xl mb-4 font-semibold">Simular Novo Acesso (Write Path)</h2>
-            <div class="flex gap-4">
+            <h2 class="text-xl mb-4 font-semibold text-blue-300"><i class="fa-solid fa-pen-to-square mr-2"></i>Simular
+                Novo Acesso (Write Path)</h2>
+            <div class="flex flex-col md:flex-row gap-4">
                 <input id="filmeInput" type="text" placeholder="Nome do Filme (ex: Velozes e Furiosos)"
-                    class="flex-1 p-3 rounded bg-gray-700 border border-gray-600 focus:outline-none focus:border-blue-500">
+                    class="flex-1 p-3 rounded bg-gray-700 border border-gray-600 focus:outline-none focus:border-blue-500 text-white placeholder-gray-400">
 
-                <select id="deviceInput" class="p-3 rounded bg-gray-700 border border-gray-600">
-                    <option value="Mobile">Celular</option>
-                    <option value="TV 4K">TV Sala</option>
-                    <option value="Web">Computador</option>
+                <select id="deviceInput" class="p-3 rounded bg-gray-700 border border-gray-600 text-white">
+                    <option value="Mobile">📱 Celular</option>
+                    <option value="TV 4K">📺 TV Sala</option>
+                    <option value="Web">💻 Computador</option>
                 </select>
 
                 <button onclick="enviarDados()"
-                    class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded transition">
-                    Dar Play
+                    class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded transition flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-play"></i> Dar Play
                 </button>
             </div>
         </div>
 
+        <!-- Lista de Leitura -->
         <div class="bg-gray-800 p-6 rounded-lg shadow-lg border border-gray-700">
             <div class="flex justify-between items-center mb-4">
-                <h2 class="text-xl font-semibold">Últimas Visualizações (Read Path)</h2>
-                <span class="text-xs text-green-400 animate-pulse">● Live Sync (2s)</span>
+                <h2 class="text-xl font-semibold text-green-400"><i class="fa-solid fa-table-list mr-2"></i>Últimas
+                    Visualizações (Read Path)</h2>
+                <div class="flex items-center gap-2 bg-gray-900 px-3 py-1 rounded-full border border-gray-700">
+                    <span class="relative flex h-3 w-3">
+                        <span
+                            class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                        <span class="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
+                    </span>
+                    <span class="text-xs text-gray-300 font-mono">Live Sync (2s)</span>
+                </div>
             </div>
 
-            <table class="w-full text-left">
-                <thead>
-                    <tr class="text-gray-400 border-b border-gray-700">
-                        <th class="pb-2">Data/Hora (Clustering Key)</th>
-                        <th class="pb-2">Filme</th>
-                        <th class="pb-2">Dispositivo</th>
-                    </tr>
-                </thead>
-                <tbody id="tabelaCorpo">
-                </tbody>
-            </table>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="text-gray-400 border-b border-gray-700 text-sm uppercase">
+                            <th class="pb-3 pl-2">Data/Hora (Clustering Key)</th>
+                            <th class="pb-3">Filme</th>
+                            <th class="pb-3">Dispositivo</th>
+                            <th class="pb-3">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabelaCorpo" class="text-sm">
+                        <!-- Dados virão aqui -->
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
 
@@ -56,39 +76,75 @@
         const API_URL = 'http://localhost:3000';
 
         async function enviarDados() {
-            const filme = document.getElementById('filmeInput').value;
+            const filmeInput = document.getElementById('filmeInput');
+            const filme = filmeInput.value;
             const dispositivo = document.getElementById('deviceInput').value;
+
             if (!filme) return alert("Digite um filme!");
 
-            await fetch(`${API_URL}/assistir`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ filme, dispositivo })
-            });
+            try {
+                await fetch(`${API_URL}/assistir`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ filme, dispositivo })
+                });
 
-            document.getElementById('filmeInput').value = '';
-            carregarDados(); // Atualiza na hora
+                filmeInput.value = '';
+                filmeInput.focus();
+                carregarDados(); // Atualiza na hora para feedback imediato
+            } catch (e) {
+                console.error("Erro ao enviar:", e);
+                alert("Erro ao conectar com a API. O servidor Node está rodando?");
+            }
         }
 
         async function carregarDados() {
-            const response = await fetch(`${API_URL}/historico`);
-            const dados = await response.json();
+            try {
+                const response = await fetch(`${API_URL}/historico`);
+                const dados = await response.json();
 
-            const tbody = document.getElementById('tabelaCorpo');
-            tbody.innerHTML = '';
+                const tbody = document.getElementById('tabelaCorpo');
+                tbody.innerHTML = '';
 
-            dados.forEach(dado => {
-                const dataFormatada = new Date(dado.data_hora).toLocaleString('pt-BR');
-                const row = `
-                    <tr class="border-b border-gray-700 hover:bg-gray-750 transition">
-                        <td class="py-3 text-blue-300 font-mono text-sm">${dataFormatada}</td>
-                        <td class="py-3 font-bold">${dado.filme_titulo}</td>
-                        <td class="py-3 text-gray-400">${dado.dispositivo}</td>
-                    </tr>
-                `;
-                tbody.innerHTML += row;
-            });
+                if (dados.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="4" class="text-center py-4 text-gray-500">Nenhum histórico encontrado. Dê o play acima!</td></tr>';
+                    return;
+                }
+
+                dados.forEach(dado => {
+                    const dataObj = new Date(dado.data_hora);
+                    // Formatação bonita da data
+                    const dataFormatada = dataObj.toLocaleDateString('pt-BR');
+                    const horaFormatada = dataObj.toLocaleTimeString('pt-BR');
+
+                    // Tratamento para status nulo (caso venha do script antigo)
+                    const status = dado.status || 'Desconhecido';
+                    const statusColor = status === 'Assistindo' ? 'text-blue-400' : (status === 'Pausado' ? 'text-yellow-400' : 'text-gray-400');
+
+                    const row = `
+                        <tr class="border-b border-gray-700 hover:bg-gray-750 transition duration-150">
+                            <td class="py-3 pl-2 font-mono text-gray-400">
+                                <span class="text-blue-300 font-bold">${horaFormatada}</span> 
+                                <span class="text-xs opacity-50 ml-1">${dataFormatada}</span>
+                            </td>
+                            <td class="py-3 font-bold text-white text-base">${dado.filme_titulo}</td>
+                            <td class="py-3 text-gray-400"><i class="fa-solid fa-laptop-code mr-1 opacity-50"></i> ${dado.dispositivo}</td>
+                            <td class="py-3 ${statusColor} font-medium text-xs uppercase tracking-wider">${status}</td>
+                        </tr>
+                    `;
+                    tbody.innerHTML += row;
+                });
+            } catch (e) {
+                console.error("Erro ao ler:", e);
+            }
         }
+
+        // Permitir enviar com ENTER
+        document.getElementById('filmeInput').addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') {
+                enviarDados();
+            }
+        });
 
         // Loop de atualização automática (Polling)
         setInterval(carregarDados, 2000);
